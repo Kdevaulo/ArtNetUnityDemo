@@ -2,7 +2,7 @@
 
 using UnityEngine;
 
-namespace StripPainters
+namespace Painters
 {
     [Serializable]
     public class DiodPainter : MonoBehaviour
