@@ -201,7 +201,7 @@ GameObject:
   - component: {fileID: 1039155682}
   - component: {fileID: 1039155681}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: ArtNetClient
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -221,8 +221,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _stripPainters:
   - {fileID: 2103384921}
-  _ipAddress: 192.168.0.166
-  CurrentIP: 192.168.0.166
+  _customIPAddress:
+    CurrentIP: 192.168.0.1
+    IPLabel: 192.168.0.1
 --- !u!4 &1039155682
 Transform:
   m_ObjectHideFlags: 0

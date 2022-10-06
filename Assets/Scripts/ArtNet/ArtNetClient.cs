@@ -1,8 +1,8 @@
 ﻿using System.Net;
 
-using Painters;
+using Models;
 
-using Unity.Collections;
+using Painters;
 
 using UnityEngine;
 
@@ -12,10 +12,7 @@ namespace ArtNet
     {
         [SerializeField] private StripPainter[] _stripPainters;
 
-        [SerializeField] private string _ipAddress;
-
-        [ReadOnly]
-        public string CurrentIP;
+        [SerializeField] private CustomIPAddress _customIPAddress;
 
         private const int ArtNetPort = 6454;
 
@@ -25,29 +22,22 @@ namespace ArtNet
 
         private Color32[] _dmxPixels = new Color32[2720]; // note: Entire subnet of pixels for texture 2D
 
-        private IPAddress _currentIPAddress;
-
         private UdpCommunicator _communicator;
 
         private void OnValidate()
         {
-            if (IPAddress.TryParse(_ipAddress, out _currentIPAddress))
-            {
-                CurrentIP = _currentIPAddress.ToString();
-                // Todo: Вывести IP в инспектор, чтобы там отображался текущий запаршеный IP
-                Debug.Log("IP address set correctly: " + _currentIPAddress);
-            }
-            else
-            {
-                Debug.LogError("You should set IP correctly in " + nameof(ArtNetClient));
-            }
+            IPAddress.TryParse(_customIPAddress.CurrentIP, out _customIPAddress.IPAddress);
+
+            _customIPAddress.IPLabel = _customIPAddress.IPAddress is null
+                ? "Ip Address Is Not Set"
+                : _customIPAddress.IPAddress.ToString();
         }
 
         private void Start()
         {
             _communicator = new UdpCommunicator();
             _communicator.DataReceived += HandleDataReceiving;
-            _communicator.Start(_currentIPAddress, ArtNetPort);
+            _communicator.Start(_customIPAddress.IPAddress, ArtNetPort);
         }
 
         private void Update()
