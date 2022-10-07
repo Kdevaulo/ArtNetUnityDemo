@@ -1,18 +1,17 @@
 ﻿using System.Net;
 
-using Models;
-
-using Painters;
+using UnityArtNetDemo.Attributes;
+using UnityArtNetDemo.Painters;
 
 using UnityEngine;
 
-namespace ArtNet
+namespace UnityArtNetDemo.ArtNet
 {
     public class ArtNetClient : MonoBehaviour
     {
         [SerializeField] private StripPainter[] _stripPainters;
 
-        [SerializeField] private CustomIPAddress _customIPAddress;
+        [SerializeField, IP("ApprovedIP:")] private string _ipAddress;
 
         private const int ArtNetPort = 6454;
 
@@ -24,20 +23,13 @@ namespace ArtNet
 
         private UdpCommunicator _communicator;
 
-        private void OnValidate()
-        {
-            IPAddress.TryParse(_customIPAddress.CurrentIP, out _customIPAddress.IPAddress);
-
-            _customIPAddress.IPLabel = _customIPAddress.IPAddress is null
-                ? "Ip Address Is Not Set"
-                : _customIPAddress.IPAddress.ToString();
-        }
-
         private void Start()
         {
+            IPAddress.TryParse(_ipAddress, out var ipAddress);
+
             _communicator = new UdpCommunicator();
             _communicator.DataReceived += HandleDataReceiving;
-            _communicator.Start(_customIPAddress.IPAddress, ArtNetPort);
+            _communicator.Start(ipAddress, ArtNetPort);
         }
 
         private void Update()

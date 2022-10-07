@@ -221,9 +221,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _stripPainters:
   - {fileID: 2103384921}
-  _customIPAddress:
-    CurrentIP: 192.168.0.1
-    IPLabel: 192.168.0.1
+  _ipAddress: 192.168.0.1
 --- !u!4 &1039155682
 Transform:
   m_ObjectHideFlags: 0
