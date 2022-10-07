@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 
-namespace ArtNet
+namespace UnityArtNetDemo.ArtNet
 {
     public class UdpCommunicator
     {

@@ -1,4 +1,4 @@
-﻿namespace ArtNet
+﻿namespace UnityArtNetDemo.ArtNet
 {
 	public static class Extensions
 	{

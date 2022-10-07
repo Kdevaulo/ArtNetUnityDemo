@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace ArtNet
+namespace UnityArtNetDemo.ArtNet
 {
     public class UdpPacket
     {

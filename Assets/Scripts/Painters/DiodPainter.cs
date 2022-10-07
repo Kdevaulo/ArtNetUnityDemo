@@ -2,7 +2,7 @@
 
 using UnityEngine;
 
-namespace Painters
+namespace UnityArtNetDemo.Painters
 {
     [Serializable]
     public class DiodPainter : MonoBehaviour

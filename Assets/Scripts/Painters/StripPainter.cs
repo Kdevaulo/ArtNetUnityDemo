@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Painters
+namespace UnityArtNetDemo.Painters
 {
     public class StripPainter : MonoBehaviour
     {

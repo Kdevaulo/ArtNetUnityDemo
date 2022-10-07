@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Net;
 
-namespace ArtNet
+namespace UnityArtNetDemo.ArtNet
 {
     public class ArtNetPacket : UdpPacket
     {
