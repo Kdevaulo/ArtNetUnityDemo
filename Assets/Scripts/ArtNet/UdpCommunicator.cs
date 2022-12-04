@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 
+using UnityEngine;
+
 namespace UnityArtNetDemo.ArtNet
 {
     public class UdpCommunicator
@@ -15,18 +17,25 @@ namespace UnityArtNetDemo.ArtNet
 
         public void Start(IPAddress address, int port)
         {
-            _socket = new UdpClient();
-            _socket.EnableBroadcast = false;
-            _socket.ExclusiveAddressUse = false;
-            _socket.Client.SendTimeout = 100;
-            _socket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            _socket.Client.Bind(new IPEndPoint(address, port));
+            try
+            {
+                _socket = new UdpClient();
+                _socket.EnableBroadcast = false;
+                _socket.ExclusiveAddressUse = false;
+                _socket.Client.SendTimeout = 100;
+                _socket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                _socket.Client.Bind(new IPEndPoint(address, port));
 
-            _server = new BackgroundWorker();
-            _server.DoWork += HandleServerWork;
-            _server.RunWorkerAsync();
+                _server = new BackgroundWorker();
+                _server.DoWork += HandleServerWork;
+                _server.RunWorkerAsync();
 
-            _server.RunWorkerCompleted += SubscribeWorker;
+                _server.RunWorkerCompleted += SubscribeWorker;
+            }
+            catch (SocketException)
+            {
+                Debug.LogError("Wrong IP Address. Please use correct IPV4 address of your computer");
+            }
         }
 
         public void Stop()
