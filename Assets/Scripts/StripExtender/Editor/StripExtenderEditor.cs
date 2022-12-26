@@ -61,7 +61,7 @@ namespace UnityArtNetDemo.StripExtender.Editor
 
         private Vector3 ValidatePointMoving(Vector3 targetPosition, Vector3 anglePoint)
         {
-            var offsetPair = VectorUtils.GetMaxDistanceAndDirection(targetPosition, anglePoint);
+            var offsetPair = VectorUtils.GetMaxDistanceAndAxis(targetPosition, anglePoint);
 
             var targetPoint = anglePoint + _stripExtender.ExtendPointOffset;
 

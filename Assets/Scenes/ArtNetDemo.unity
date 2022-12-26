@@ -373,7 +373,7 @@ PrefabInstance:
     - target: {fileID: 7177912162821064852, guid: 13b9bfa3e57fa224fbbd8153b5892b3f,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7177912162821064852, guid: 13b9bfa3e57fa224fbbd8153b5892b3f,
         type: 3}
@@ -419,6 +419,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: StripExtender
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177912162821064854, guid: 13b9bfa3e57fa224fbbd8153b5892b3f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 13b9bfa3e57fa224fbbd8153b5892b3f, type: 3}
