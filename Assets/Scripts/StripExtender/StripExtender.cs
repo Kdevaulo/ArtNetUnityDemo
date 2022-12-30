@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+
+using Cysharp.Threading.Tasks;
 
 using UnityArtNetDemo.Painters;
 
@@ -11,9 +14,9 @@ namespace UnityArtNetDemo.StripExtender
     [RequireComponent(typeof(StripPainter)), ExecuteInEditMode]
     public class StripExtender : MonoBehaviour
     {
-        public Action<Vector3> ExtendPointMoved = delegate(Vector3 position) { };
-
         public Vector3 ExtendPointOffset => _extendPointOffset;
+
+        public Vector3 StartPointPosition => _startPoint.position;
 
         public ExtendPoint ExtendPoint { get; private set; }
 
@@ -31,14 +34,28 @@ namespace UnityArtNetDemo.StripExtender
 
         private int _currentFragmentIndex = 0;
 
+        private CancellationTokenSource _cts = new CancellationTokenSource();
+
         private void OnEnable()
         {
-            ExtendPointMoved += HandlePointMovement;
+            if (ExtendPoint == null)
+            {
+                CreatePoint(StartPointPosition);
+            }
+
+            _cts = new CancellationTokenSource();
+
+            UpdateStrip(_cts.Token).Forget();
         }
 
         private void OnDisable()
         {
-            ExtendPointMoved -= HandlePointMovement;
+            if (_cts != null && !_cts.IsCancellationRequested)
+            {
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
+            }
 
             if (ExtendPoint != null)
             {
@@ -55,7 +72,7 @@ namespace UnityArtNetDemo.StripExtender
 
             if (ExtendPoint == null)
             {
-                CreatePoint(_startPoint.position + _extendPointOffset);
+                CreatePoint(StartPointPosition + _extendPointOffset);
             }
 
             CheckDataFilling();
@@ -63,7 +80,16 @@ namespace UnityArtNetDemo.StripExtender
 
         public void TryMovePointToStartPosition()
         {
-            ExtendPoint?.SetPosition(_startPoint.position + _extendPointOffset);
+            ExtendPoint?.SetPosition(StartPointPosition + _extendPointOffset);
+        }
+
+        public void FinishStripPart()
+        {
+            _startPoint.position = ExtendPoint.CurrentPosition;
+
+            _currentFragmentIndex++;
+
+            _stripFragments.Add(new List<GameObject>());
         }
 
         public void ResetArray() // todo: temp method
@@ -84,6 +110,20 @@ namespace UnityArtNetDemo.StripExtender
 
             _stripFragments.Clear();
             _stripFragments.Add(new List<GameObject>());
+            _startPoint.position = transform.position;
+            _currentFragmentIndex = 0;
+        }
+
+        private async UniTask UpdateStrip(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var convertedPointPosition = ExtendPoint.CurrentPosition - _extendPointOffset;
+
+                CalculatePositionValues(convertedPointPosition);
+
+                await UniTask.Delay(1, cancellationToken: token);
+            }
         }
 
         private void CheckDataFilling()
@@ -108,98 +148,45 @@ namespace UnityArtNetDemo.StripExtender
             ExtendPoint = new ExtendPoint(position);
         }
 
-        private void HandlePointMovement(Vector3 pointPosition)
-        {
-            var convertedPointPosition = pointPosition - _extendPointOffset;
-
-            CalculatePositionValues(convertedPointPosition);
-        }
-
         private void CalculatePositionValues(Vector3 pointPosition)
         {
             var parameters = GetCurrentParameters(_stripType);
-
-            Vector3 lastPixelPosition = _startPoint.position;
-
-            if (_stripFragments.Count > 0)
-            {
-                var lastPixel = _stripFragments[_currentFragmentIndex].LastOrDefault();
-
-                // note: if first pixel => use transform.position
-                if (lastPixel)
-                {
-                    lastPixelPosition = lastPixel.transform.position;
-                }
-            }
-
-            var dataPair = VectorUtils.GetMaxDistanceAndAxis(lastPixelPosition, pointPosition);
-
-            // note: length of path from last pixel to _stripExtender.ExtendPoint
-            var fromLastPixelDistance = dataPair.Item1;
-            var usingAxis = dataPair.Item2;
-
-            var convertedLastPixelPosition = Vector3.Scale(lastPixelPosition, usingAxis);
-
-            AddPixel(fromLastPixelDistance, convertedLastPixelPosition, pointPosition,
-                usingAxis, parameters);
-
-            DeletePixels(_startPoint.position, pointPosition);
-        }
-
-        private void AddPixel(float fromLastPixelDistance, Vector3 lastPixelPosition, Vector3 pointPosition,
-            Vector3 usingAxis, StripParameters parameters)
-        {
             var step = parameters.Step;
 
-            var direction = usingAxis * (fromLastPixelDistance > 0 ? 1 : -1);
+            var distancePair = VectorUtils.GetMaxDistanceAndAxis(StartPointPosition, pointPosition);
+            var targetPixelsCount = (int) (Math.Abs(distancePair.Item1) / step);
+            var currentStrip = _stripFragments[_currentFragmentIndex];
 
-            var stepVector = step * direction;
+            var offset = distancePair.Item2 * (distancePair.Item1 > 0 ? 1 : -1) * step;
 
-            // note: if the point is further than the (previous pixel + step)
-            if (Vector3.Dot(stepVector, pointPosition.normalized) > 0 && Math.Abs(fromLastPixelDistance) > step)
+            if (targetPixelsCount != currentStrip.Count)
             {
-                var newPixelPosition = lastPixelPosition + stepVector;
+                DeleteStrip(currentStrip);
 
-                var pixel = Instantiate(parameters.Prefab, newPixelPosition, Quaternion.identity, transform);
-                _stripFragments[_currentFragmentIndex].Add(pixel);
+                CreateStrip(targetPixelsCount, StartPointPosition, offset, parameters.Prefab);
             }
         }
 
-        private void DeletePixels(Vector3 startPosition, Vector3 pointPosition)
+        private void DeleteStrip(List<GameObject> list)
         {
-            var currentStrip = _stripFragments[_currentFragmentIndex];
-
-            if (currentStrip.Count < 1)
+            foreach (var item in list)
             {
-                return;
+                item.SetActive(false);
+                DestroyImmediate(item);
             }
 
-            var dataPair = VectorUtils.GetMaxDistanceAndAxis(startPosition, pointPosition);
+            list.Clear();
+        }
 
-            // note: distance from _startPoint to _stripExtender.ExtendPoint
-            var pointDistanceFromStart = dataPair.Item1;
-            var movementDirection = dataPair.Item2;
-
-            for (var i = 0; i < currentStrip.Count; i++)
+        private void CreateStrip(int pixelsCount, Vector3 position, Vector3 offset, GameObject prefab)
+        {
+            for (int i = 0; i < pixelsCount; i++)
             {
-                var pixel = currentStrip[i];
+                var pixel = Instantiate(prefab, position, Quaternion.identity, transform);
 
-                var partPosition = pixel.transform.position;
+                position += offset;
 
-                var convertedPixelPosition = Vector3.Scale(partPosition, movementDirection);
-
-                var distancePair = VectorUtils.GetMaxDistanceAndAxis(startPosition, convertedPixelPosition);
-
-                var pixelDistanceFromStart = distancePair.Item1;
-                var pixelDirection = distancePair.Item2;
-
-                if (Math.Abs(pixelDistanceFromStart) > Math.Abs(pointDistanceFromStart) ||
-                    movementDirection != pixelDirection)
-                {
-                    pixel.SetActive(false);
-                    DestroyImmediate(pixel);
-                    currentStrip.RemoveAt(i);
-                }
+                _stripFragments[_currentFragmentIndex].Add(pixel);
             }
         }
 

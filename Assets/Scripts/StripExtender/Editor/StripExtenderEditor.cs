@@ -23,6 +23,11 @@ namespace UnityArtNetDemo.StripExtender.Editor
                 _stripExtender.TryMovePointToStartPosition();
             }
 
+            if (GUILayout.Button("FinishStripPart"))
+            {
+                _stripExtender.FinishStripPart();
+            }
+
             if (GUILayout.Button("ResetArray"))
             {
                 _stripExtender.ResetArray();
@@ -51,11 +56,9 @@ namespace UnityArtNetDemo.StripExtender.Editor
             {
                 Undo.RecordObject(_stripExtender, "Move Point");
 
-                var newPosition = ValidatePointMoving(targetPosition, _stripExtender.transform.position);
+                var newPosition = ValidatePointMoving(targetPosition, _stripExtender.StartPointPosition);
 
                 currentPoint.SetPosition(newPosition);
-
-                _stripExtender.ExtendPointMoved.Invoke(newPosition);
             }
         }
 
