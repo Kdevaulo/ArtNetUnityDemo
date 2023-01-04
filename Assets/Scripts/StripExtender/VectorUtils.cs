@@ -6,6 +6,14 @@ namespace UnityArtNetDemo.StripExtender
 {
     public static class VectorUtils
     {
+        private static readonly Vector3[] RotationVectors =
+        {
+            Vector3.zero, // note: HorizontalUp
+            new Vector3(0, 0, -90), // note: HorizontalRight
+            new Vector3(0, 0, 90), // note: HorizontalLeft
+            new Vector3(0, 0, 180) // note: HorizontalDown
+        };
+
         /// <summary>
         /// Returns distance and axis == max float value of distances from startPosition,
         /// other axes == 0
@@ -35,6 +43,16 @@ namespace UnityArtNetDemo.StripExtender
             }
 
             throw new Exception($"{nameof(VectorUtils)} {nameof(GetMaxDistanceAndAxis)}");
+        }
+
+        /// <summary>
+        /// Returns a quaternion depending on currentRotation and the selected deviation (rotation)
+        /// </summary>
+        public static Quaternion GetQuaternion(Rotation rotation, Quaternion currentRotation)
+        {
+            var rotationVector = RotationVectors[(int) rotation];
+
+            return Quaternion.Euler(currentRotation.eulerAngles + rotationVector);
         }
     }
 }

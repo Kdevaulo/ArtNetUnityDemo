@@ -24,11 +24,15 @@ namespace UnityArtNetDemo.StripExtender
 
         [SerializeField] private StripType _stripType;
 
+        [SerializeField] private Rotation _rotation;
+
         [SerializeField] private Vector3 _extendPointOffset;
 
         [SerializeField] private StripPainter _stripPainter;
 
         [SerializeField] private StripTypeData _stripTypeData;
+
+        private Quaternion _quaternion;
 
         private List<List<GameObject>> _stripFragments = new List<List<GameObject>> {new List<GameObject>()};
 
@@ -120,7 +124,7 @@ namespace UnityArtNetDemo.StripExtender
             {
                 var convertedPointPosition = ExtendPoint.CurrentPosition - _extendPointOffset;
 
-                CalculatePositionValues(convertedPointPosition);
+                HandleStripChanging(convertedPointPosition);
 
                 await UniTask.Delay(1, cancellationToken: token);
             }
@@ -148,10 +152,12 @@ namespace UnityArtNetDemo.StripExtender
             ExtendPoint = new ExtendPoint(position);
         }
 
-        private void CalculatePositionValues(Vector3 pointPosition)
+        private void HandleStripChanging(Vector3 pointPosition)
         {
             var parameters = GetCurrentParameters(_stripType);
             var step = parameters.Step;
+
+            #region Calculate positioning values
 
             var distancePair = VectorUtils.GetMaxDistanceAndAxis(StartPointPosition, pointPosition);
             var targetPixelsCount = (int) (Math.Abs(distancePair.Item1) / step);
@@ -159,11 +165,24 @@ namespace UnityArtNetDemo.StripExtender
 
             var offset = distancePair.Item2 * (distancePair.Item1 > 0 ? 1 : -1) * step;
 
-            if (targetPixelsCount != currentStrip.Count)
+            #endregion
+
+            #region Calculate rotation values
+
+            _startPoint.LookAt(pointPosition);
+            var lookRotation = _startPoint.rotation; // note: get direction from startPoint towards stripExtenderPoint
+
+            var selectedRotation = VectorUtils.GetQuaternion(_rotation, lookRotation);
+            _quaternion = selectedRotation;
+
+            #endregion
+
+            if (targetPixelsCount != currentStrip.Count ||
+                _quaternion != currentStrip.FirstOrDefault()?.transform.rotation)
             {
                 DeleteStrip(currentStrip);
 
-                CreateStrip(targetPixelsCount, StartPointPosition, offset, parameters.Prefab);
+                CreateStrip(targetPixelsCount, StartPointPosition, offset, _quaternion, parameters.Prefab);
             }
         }
 
@@ -178,11 +197,12 @@ namespace UnityArtNetDemo.StripExtender
             list.Clear();
         }
 
-        private void CreateStrip(int pixelsCount, Vector3 position, Vector3 offset, GameObject prefab)
+        private void CreateStrip(int pixelsCount, Vector3 position, Vector3 offset, Quaternion quaternion,
+            GameObject prefab)
         {
             for (int i = 0; i < pixelsCount; i++)
             {
-                var pixel = Instantiate(prefab, position, Quaternion.identity, transform);
+                var pixel = Instantiate(prefab, position, quaternion, transform);
 
                 position += offset;
 
