@@ -105,7 +105,7 @@ GameObject:
   - component: {fileID: 3306957017034059159}
   - component: {fileID: 1827718560252916446}
   m_Layer: 0
-  m_Name: DiodFor30PerMeter
+  m_Name: DiodeFor30PerMeter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

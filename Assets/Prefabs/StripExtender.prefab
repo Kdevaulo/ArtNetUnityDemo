@@ -75,7 +75,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21696b1557bdcee4ab2a885e0eee42c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _diodColorizers: []
+  _diodeColorizers: []
 --- !u!114 &7177912162821064855
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88,8 +88,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62a76680b29dd2747848defc98e0dc3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _extendPoint:
+    _currentPosition: {x: 0, y: 0, z: 0}
   _startPoint: {fileID: 7177912162652381194}
   _stripType: 0
+  _rotation: 0
   _extendPointOffset: {x: 0, y: 0, z: 0}
   _stripPainter: {fileID: 7177912162821064853}
   _stripTypeData: {fileID: 11400000, guid: 016925f7b250c8e42a4e0115122bf2d1, type: 2}
+  _stripExtenderData: {fileID: 11400000, guid: 2051a463c5f6fba4da7b75073796f40c, type: 2}
