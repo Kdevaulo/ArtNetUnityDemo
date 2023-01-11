@@ -28,9 +28,9 @@ namespace UnityArtNetDemo.StripExtender.Editor
                 _stripExtender.FinishStripPart();
             }
 
-            if (GUILayout.Button("ResetArray"))
+            if (GUILayout.Button("Reset"))
             {
-                _stripExtender.ResetArray();
+                _stripExtender.Reset();
             }
         }
 

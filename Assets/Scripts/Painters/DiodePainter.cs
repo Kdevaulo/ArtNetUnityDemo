@@ -4,8 +4,8 @@ using UnityEngine;
 
 namespace UnityArtNetDemo.Painters
 {
-    [Serializable]
-    public class DiodPainter : MonoBehaviour
+    [Serializable, AddComponentMenu(nameof(DiodePainter) + " in " + nameof(Painters))]
+    public class DiodePainter : MonoBehaviour
     {
         [SerializeField] private SpriteRenderer _renderer;
 

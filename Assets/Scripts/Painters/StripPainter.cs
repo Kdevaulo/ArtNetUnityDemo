@@ -2,19 +2,25 @@ using UnityEngine;
 
 namespace UnityArtNetDemo.Painters
 {
+    [AddComponentMenu(nameof(StripPainter) + " in " + nameof(Painters))]
     public class StripPainter : MonoBehaviour
     {
-        public int DiodsCount => _diodColorizers.Length;
+        public int DiodesCount => _diodeColorizers.Length;
 
-        [SerializeField] private DiodPainter[] _diodColorizers;
+        [SerializeField] private DiodePainter[] _diodeColorizers;
 
         public void FillStrip(Color32[] colors)
         {
-            for (var i = 0; i < _diodColorizers.Length; i++)
+            for (var i = 0; i < _diodeColorizers.Length; i++)
             {
-                var colorizer = _diodColorizers[i];
+                var colorizer = _diodeColorizers[i];
                 colorizer.SetColor(colors[i]);
             }
+        }
+
+        public void SetDiodePainters(DiodePainter[] painters)
+        {
+            _diodeColorizers = painters;
         }
     }
 }

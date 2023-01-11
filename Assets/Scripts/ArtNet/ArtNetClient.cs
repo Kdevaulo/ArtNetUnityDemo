@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace UnityArtNetDemo.ArtNet
 {
+    [AddComponentMenu(nameof(ArtNetClient) + " in " + nameof(ArtNet))]
     public class ArtNetClient : MonoBehaviour
     {
         [SerializeField] private StripPainter[] _stripPainters;
@@ -36,7 +37,7 @@ namespace UnityArtNetDemo.ArtNet
         {
             foreach (var painter in _stripPainters)
             {
-                painter.FillStrip(GetColors(painter.DiodsCount));
+                painter.FillStrip(GetColors(painter.DiodesCount));
             }
 
             _stripPixelIndexer = 0;

@@ -7,18 +7,21 @@ using Cysharp.Threading.Tasks;
 
 using UnityArtNetDemo.Painters;
 
+using UnityEditor;
+
 using UnityEngine;
 
 namespace UnityArtNetDemo.StripExtender
 {
-    [RequireComponent(typeof(StripPainter)), ExecuteInEditMode]
-    public class StripExtender : MonoBehaviour
+    [RequireComponent(typeof(StripPainter)), ExecuteInEditMode,
+     AddComponentMenu(nameof(StripExtender) + " in " + nameof(StripExtender))]
+    public class StripExtender : MonoBehaviour, IDisposable
     {
         public Vector3 ExtendPointOffset => _extendPointOffset;
 
         public Vector3 StartPointPosition => _startPoint.position;
 
-        public ExtendPoint ExtendPoint { get; private set; }
+        public ExtendPoint ExtendPoint => _extendPoint;
 
         [SerializeField] private Transform _startPoint;
 
@@ -32,17 +35,27 @@ namespace UnityArtNetDemo.StripExtender
 
         [SerializeField] private StripTypeData _stripTypeData;
 
-        private Quaternion _quaternion;
+        [SerializeField] private StripExtenderData _stripExtenderData;
 
-        private List<List<GameObject>> _stripFragments = new List<List<GameObject>> {new List<GameObject>()};
+        private List<GameObjectCollection> _stripFragments =
+            new List<GameObjectCollection> {new GameObjectCollection()};
+
+        private ExtendPoint _extendPoint;
+
+        private Quaternion _quaternion;
 
         private int _currentFragmentIndex = 0;
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
 
+        public StripExtender()
+        {
+            EditorApplication.playModeStateChanged += TryGetData;
+        }
+
         private void OnEnable()
         {
-            if (ExtendPoint == null)
+            if (_extendPoint == null)
             {
                 CreatePoint(StartPointPosition);
             }
@@ -52,19 +65,17 @@ namespace UnityArtNetDemo.StripExtender
             UpdateStrip(_cts.Token).Forget();
         }
 
+        private void Start()
+        {
+            _stripFragments = _stripExtenderData.StripFragments;
+            _extendPoint = _stripExtenderData.ExtendPoint;
+
+            SetDiodePainters();
+        }
+
         private void OnDisable()
         {
-            if (_cts != null && !_cts.IsCancellationRequested)
-            {
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = null;
-            }
-
-            if (ExtendPoint != null)
-            {
-                ExtendPoint = null;
-            }
+            TryDisposeCts();
         }
 
         private void OnValidate()
@@ -74,55 +85,70 @@ namespace UnityArtNetDemo.StripExtender
                 _stripPainter = GetComponent<StripPainter>();
             }
 
-            if (ExtendPoint == null)
+            if (_extendPoint == null)
             {
                 CreatePoint(StartPointPosition + _extendPointOffset);
             }
-
-            CheckDataFilling();
         }
 
-        public void TryMovePointToStartPosition()
+        void IDisposable.Dispose()
         {
-            ExtendPoint?.SetPosition(StartPointPosition + _extendPointOffset);
+            EditorApplication.playModeStateChanged -= TryGetData;
         }
 
-        public void FinishStripPart()
+        public void Reset() // todo: temp method
         {
-            _startPoint.position = ExtendPoint.CurrentPosition;
-
-            _currentFragmentIndex++;
-
-            _stripFragments.Add(new List<GameObject>());
-        }
-
-        public void ResetArray() // todo: temp method
-        {
-            var fragments = _stripFragments.SelectMany(list => list);
+            var fragments = _stripFragments.SelectMany(list => list.GameObjects);
 
             foreach (var item in fragments)
             {
                 DestroyImmediate(item.gameObject);
             }
 
-            var oldDiodPainters = gameObject.GetComponentsInChildren<DiodPainter>();
+            var oldDiodePainters = gameObject.GetComponentsInChildren<DiodePainter>();
 
-            foreach (var painter in oldDiodPainters)
+            foreach (var painter in oldDiodePainters)
             {
                 DestroyImmediate(painter.gameObject);
             }
 
             _stripFragments.Clear();
-            _stripFragments.Add(new List<GameObject>());
+            _stripFragments.Add(new GameObjectCollection());
+
             _startPoint.position = transform.position;
             _currentFragmentIndex = 0;
+
+            TryDisposeCts();
+
+            _cts = new CancellationTokenSource();
+
+            TryMovePointToStartPosition();
+
+            UpdateStrip(_cts.Token).Forget();
+        }
+
+        public void TryMovePointToStartPosition()
+        {
+            _extendPoint?.SetPosition(StartPointPosition + _extendPointOffset);
+        }
+
+        public void FinishStripPart()
+        {
+            // todo: прикреплять новую точку так, чтобы лента продолжалась там, где закончилась предыдущая
+            // todo: точка сбрасывается при запуске плеймода, надо это как-то чинить
+
+            _startPoint.position = _extendPoint.CurrentPosition;
+
+            _currentFragmentIndex++;
+
+            _stripFragments.Add(new GameObjectCollection());
         }
 
         private async UniTask UpdateStrip(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                var convertedPointPosition = ExtendPoint.CurrentPosition - _extendPointOffset;
+                var convertedPointPosition = _extendPoint.CurrentPosition - _extendPointOffset;
 
                 HandleStripChanging(convertedPointPosition);
 
@@ -130,26 +156,18 @@ namespace UnityArtNetDemo.StripExtender
             }
         }
 
-        private void CheckDataFilling()
+        private void TryGetData(PlayModeStateChange state)
         {
-            if (_stripTypeData == null)
+            if (state == PlayModeStateChange.EnteredPlayMode)
             {
-                Debug.LogError(nameof(StripTypeData) + " reference is missing");
-            }
-            else if (_stripTypeData.StripParameters.Length == 0)
-            {
-                Debug.LogError(StripExtenderConstants.StripTypeErrorPath + " StripTypes should be set up");
-            }
-            else if (_stripTypeData.StripParameters.FirstOrDefault(x => x.Type == _stripType) == null)
-            {
-                Debug.LogError(StripExtenderConstants.StripTypeErrorPath +
-                               " StripTypes does not contain chosen strip type");
+                _stripFragments = _stripExtenderData.StripFragments;
+                _extendPoint = _stripExtenderData.ExtendPoint;
             }
         }
 
         private void CreatePoint(Vector3 position)
         {
-            ExtendPoint = new ExtendPoint(position);
+            _extendPoint = new ExtendPoint(position);
         }
 
         private void HandleStripChanging(Vector3 pointPosition)
@@ -177,10 +195,10 @@ namespace UnityArtNetDemo.StripExtender
 
             #endregion
 
-            if (targetPixelsCount != currentStrip.Count ||
-                _quaternion != currentStrip.FirstOrDefault()?.transform.rotation)
+            if (targetPixelsCount != currentStrip.GameObjects.Count ||
+                _quaternion != currentStrip.GameObjects.FirstOrDefault()?.transform.rotation)
             {
-                DeleteStrip(currentStrip);
+                DeleteStrip(currentStrip.GameObjects);
 
                 CreateStrip(targetPixelsCount, StartPointPosition, offset, _quaternion, parameters.Prefab);
             }
@@ -190,8 +208,11 @@ namespace UnityArtNetDemo.StripExtender
         {
             foreach (var item in list)
             {
-                item.SetActive(false);
-                DestroyImmediate(item);
+                if (item)
+                {
+                    item.SetActive(false);
+                    DestroyImmediate(item);
+                }
             }
 
             list.Clear();
@@ -206,7 +227,26 @@ namespace UnityArtNetDemo.StripExtender
 
                 position += offset;
 
-                _stripFragments[_currentFragmentIndex].Add(pixel);
+                _stripFragments[_currentFragmentIndex].GameObjects.Add(pixel);
+            }
+        }
+
+        private void SetDiodePainters()
+        {
+            var diodePainters = _stripFragments.SelectMany(x => x.GameObjects)
+                .Select(x => x.GetComponent<DiodePainter>())
+                .ToArray();
+
+            _stripPainter.SetDiodePainters(diodePainters);
+        }
+
+        private void TryDisposeCts()
+        {
+            if (_cts != null && !_cts.IsCancellationRequested)
+            {
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
             }
         }
 
